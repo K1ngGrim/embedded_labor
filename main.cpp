@@ -72,7 +72,7 @@ int dot_product(vector<int> &sequence, vector<int> &chip_sequence) {
     return sum;
 }
 
-pair<int, int> cross_correlation(vector<int> &sequence, vector<int> &chip_sequence, int threshold = 10) {
+pair<int, int> cross_correlation(vector<int> &sequence, vector<int> &chip_sequence, int threshold = 256) {
 
     int neg_peak = 0;
     int pos_peak = 0;
@@ -103,9 +103,9 @@ pair<int, int> cross_correlation(vector<int> &sequence, vector<int> &chip_sequen
     //cout << "Pos Peak: " << pos_peak << "Neg Peak: " << neg_peak << endl;
     if(pos_peak > threshold || neg_peak < -threshold) {
         if(pos_peak > -neg_peak) {
-            return make_pair(delta_delta, 1);
+            return make_pair(1, delta_delta);
         }else if(pos_peak < -neg_peak) {
-            return make_pair(delta_delta, 0);
+            return make_pair(0, delta_delta);
         }
     }
 
@@ -135,13 +135,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    read_sequence(sat_sequence, "gps_sequence_15.txt");
+    read_sequence(sat_sequence, "gps_sequence_12.txt");
 
     for(int i = 0; i <24; i++) {
         generateSequence(i+1);
         pair<int, int> val = cross_correlation(sat_sequence, chip_sequences[i]);
         if(!(val.first == -1 && val.second == -1))
-            cout << "ID " << i+1 << " Bit " << val.second << " at " << val.first << endl;
+            //Satellite 8 has sent bit 0 (delta = 72)
+            cout << "Satellite " << i+1 << " has sent bit " << val.first << " (delta " << val.second << ")" << endl;
     }
 
 
