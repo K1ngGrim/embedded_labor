@@ -1,17 +1,18 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
 #include <bitset>
+#include <ctime>
+#include <cstring>
 
-using namespace std;
+clock_t start_t, end_t;
 
 struct RegisterInfo {
     int reg1;
     int reg2;
 };
 
-RegisterInfo infos[24] = {
+RegisterInfo infos[24] ={
         {2, 6},
         {3, 7},
         {4, 8},
@@ -38,8 +39,8 @@ RegisterInfo infos[24] = {
         {4, 6}
 };
 
-std::vector<int> chip_sequences[24];
-std::vector<int> sat_sequence;
+int chip_sequences[24][1023];
+int sat_sequence[2046];
 
 void generateSequence(int id) {
     RegisterInfo info = infos[id-1];
@@ -58,62 +59,13 @@ void generateSequence(int id) {
         bot <<= 1;
         bot[0] = new_bot;
         auto val = val_top xor val_bot;
-        chip_sequences[id - 1].push_back(val == 0? -1 : 1);
+        chip_sequences[id - 1][i] = (val == 0? -1 : 1);
     }
 
 }
 
-int dot_product(vector<int> &sequence, vector<int> &chip_sequence) {
-    int sum = 0;
-    for(int i = 0; i < 1023; i++) {
-        sum += sequence[i] * chip_sequence[i];
-    }
 
-    return sum;
-}
-
-pair<int, int> cross_correlation(vector<int> &sequence, vector<int> &chip_sequence, int threshold = 256) {
-
-    int neg_peak = 0;
-    int pos_peak = 0;
-    int delta_delta = 0;
-
-    for(int delta = 0; delta < 1023; delta++) {
-
-        int sum = dot_product(sequence, chip_sequence);
-        //cout << sum << " ";
-
-        if(sum > pos_peak) {
-            pos_peak = sum;
-            delta_delta = delta;
-
-        }else
-            if(sum < neg_peak) {
-            neg_peak = sum;
-            delta_delta = delta;
-        }
-
-        chip_sequence.insert(chip_sequence.begin(), chip_sequence[1022]);
-        chip_sequence.pop_back();
-
-    }
-
-    //cout << endl;
-
-    //cout << "Pos Peak: " << pos_peak << "Neg Peak: " << neg_peak << endl;
-    if(pos_peak > threshold || neg_peak < -threshold) {
-        if(pos_peak > -neg_peak) {
-            return make_pair(1, delta_delta);
-        }else if(pos_peak < -neg_peak) {
-            return make_pair(0, delta_delta);
-        }
-    }
-
-    return make_pair(-1, -1);
-
-}
-
-void read_sequence(vector<int>& sequence, const string& filePath) {
+void read_sequence(int sequence[], const char filePath[]) {
     std::ifstream file(filePath);
 
     if (!file.is_open()) {
@@ -122,30 +74,73 @@ void read_sequence(vector<int>& sequence, const string& filePath) {
     }
 
     int number;
-    while (file >> number) {
-        sequence.push_back(number);
+    for (int i = 0; i < 1023; ++i) {
+        if(file >> number) {
+            sequence[i] = number;
+            sequence[1023 + i] = number;
+        }
+
     }
 
     file.close();
 }
 
-int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "Verwendung: " << argv[0] << " <Pfad zur Datei>" << std::endl;
-        return 1;
+int dot_product_optimal(const int sequence[], const int chip_sequence[], int offset) {
+    int sum = 0;
+
+    for(int i = 0; i < 1023; i++) {
+        sum += sequence[offset + i] * chip_sequence[i];
     }
-
-    read_sequence(sat_sequence, "gps_sequence_12.txt");
-
-    for(int i = 0; i <24; i++) {
-        generateSequence(i+1);
-        pair<int, int> val = cross_correlation(sat_sequence, chip_sequences[i]);
-        if(!(val.first == -1 && val.second == -1))
-            //Satellite 8 has sent bit 0 (delta = 72)
-            cout << "Satellite " << i+1 << " has sent bit " << val.first << " (delta " << val.second << ")" << endl;
-    }
-
-
+    return sum;
 }
+
+void cross_correlation_optimal(const int sequence[], const int chip_sequence[], int result[], int threshold = 800) {
+
+    for(int delta = 0; delta < 1023; delta++) {
+
+        int sum = dot_product_optimal(sequence, chip_sequence, delta);
+
+        if(sum > threshold) {
+            result[0] = 1;
+            result[1] = delta;
+            return;
+        }else if(sum < -threshold) {
+            result[0] = 1;
+            result[1] = delta;
+            return;
+        }
+    }
+}
+
+void test_optimal() {
+    start_t = clock();
+    for(int i = 0; i <24; i++) {
+        int result[] = {-1, -1};
+        cross_correlation_optimal(sat_sequence, chip_sequences[i], result);
+        if(!(result[0] == -1 && result[1] == -1)) {
+            printf("Satellite %d has sent bit %d (delta %d)\n", i, result[0], result[1]);
+
+        }
+    }
+    end_t = clock();
+    printf("This took %fs\n", ((double) (end_t - start_t)) / CLOCKS_PER_SEC);
+}
+
+int main(int argc, char* argv[]) {
+    char path[] = "gps_sequence_7.txt";
+    if (argc == 2) {
+         strcpy(path, argv[1]);
+    }
+
+    for (int i = 0; i < 24; ++i) {
+        generateSequence(i+1);
+    }
+
+    read_sequence(sat_sequence, path);
+
+    test_optimal();
+}
+
+
 
 

@@ -1,0 +1,67 @@
+//
+// Created by Florian Kaiser on 17.04.24.
+//
+#include <vector>
+
+using namespace std;
+
+
+
+int dot_product_modulo(vector<int> &sequence, vector<int> &chip_sequence, int offset) {
+    int sum = 0;
+    for(int i = 0; i < 1023; i++) {
+        //statt mit modulo nochmal mit vektor rotation und dann messen, dann noch optimal
+        int sequence_index = (i + offset) % 1023;
+        sum += sequence[sequence_index] * chip_sequence[i];
+    }
+
+    return sum;
+}
+
+int dot_product_rotation(vector<int> &sequence, vector<int> &chip_sequence) {
+    int sum = 0;
+    for (int i = 0; i < 1023; i++) {
+        sum += sequence[i] * chip_sequence[i];
+
+        //Rotation der Chip_sequence:
+        chip_sequence.push_back(chip_sequence[1022]);
+        chip_sequence.pop_back();
+    }
+
+    return sum;
+}
+
+pair<int, int> cross_correlation(vector<int> &sequence, vector<int> &chip_sequence, int threshold = 800) {
+
+    int neg_peak = 0;
+    int pos_peak = 0;
+    int delta_delta = 0;
+
+    for(int delta = 0; delta < 1023; delta++) {
+
+        int sum = dot_product_modulo(sequence, chip_sequence, delta);
+
+        //threshold überprüfen in der schleife und break falls ja.
+        if(sum > pos_peak) {
+            pos_peak = sum;
+            delta_delta = delta;
+
+        }else
+        if(sum < neg_peak) {
+            neg_peak = sum;
+            delta_delta = delta;
+        }
+    }
+
+    if(pos_peak > threshold || neg_peak < -threshold) {
+        if(pos_peak > -neg_peak) {
+            return make_pair(1, delta_delta);
+        }else if(pos_peak < -neg_peak) {
+            return make_pair(0, delta_delta);
+        }
+    }
+
+    return make_pair(-1, -1);
+
+}
+

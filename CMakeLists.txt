@@ -3,4 +3,8 @@ project(embedded)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(embedded main.cpp)
+add_executable(embedded main.cpp
+        async_dma.txt
+        main_old.cpp
+        perfbench.cpp
+)
