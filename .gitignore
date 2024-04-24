@@ -9,3 +9,13 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
+/cmake-build-debug/
+/.idea
+/.cmake
+*.exe
+/embedded
+/main
+/main_old
+/not_optimized
+doc.pdf
+doc.docx

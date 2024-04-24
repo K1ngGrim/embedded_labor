@@ -64,7 +64,6 @@ void generateSequence(int id) {
 
 }
 
-
 void read_sequence(int sequence[], const char filePath[]) {
     std::ifstream file(filePath);
 
@@ -94,17 +93,17 @@ int dot_product_optimal(const int sequence[], const int chip_sequence[], int off
     return sum;
 }
 
-void cross_correlation_optimal(const int sequence[], const int chip_sequence[], int result[], int threshold = 800) {
-
+void cross_correlation_optimal(const int sequence[], const int chip_sequence[], int result[]) {
     for(int delta = 0; delta < 1023; delta++) {
 
         int sum = dot_product_optimal(sequence, chip_sequence, delta);
 
-        if(sum > threshold) {
+        if(sum > 800) {
             result[0] = 1;
             result[1] = delta;
             return;
-        }else if(sum < -threshold) {
+        }
+        if(sum < -800) {
             result[0] = 1;
             result[1] = delta;
             return;
@@ -112,15 +111,47 @@ void cross_correlation_optimal(const int sequence[], const int chip_sequence[], 
     }
 }
 
+void cross_correlation(const int sequence[], const int chip_sequence[], int result[]) {
+    int neg_peak = 0;
+    int pos_peak = 0;
+    int delta_delta = 0;
+
+    for(int delta = 0; delta < 1023; delta++) {
+
+        int sum = dot_product_optimal(sequence, chip_sequence, delta);
+        //cout << sum << " ";
+
+        if(sum > pos_peak) {
+            pos_peak = sum;
+            delta_delta = delta;
+
+        }else
+        if(sum < neg_peak) {
+            neg_peak = sum;
+            delta_delta = delta;
+        }
+    }
+
+    //threshold als hart codierte konstante
+    //macht es einen unterschied int oder const int
+    if(pos_peak > 800 || neg_peak < -800) {
+        if(pos_peak > -neg_peak) {
+            result[0] = 1;
+            result[1] = delta_delta;
+            return;
+        }else if(pos_peak < -neg_peak) {
+            result[0] = 0;
+            result[1] = delta_delta;
+            return;
+        }
+    }
+}
+
 void test_optimal() {
     start_t = clock();
-    for(int i = 0; i <24; i++) {
+    for(auto & chip_sequence : chip_sequences) {
         int result[] = {-1, -1};
-        cross_correlation_optimal(sat_sequence, chip_sequences[i], result);
-        if(!(result[0] == -1 && result[1] == -1)) {
-            printf("Satellite %d has sent bit %d (delta %d)\n", i, result[0], result[1]);
-
-        }
+        cross_correlation_optimal(sat_sequence, chip_sequence, result);
     }
     end_t = clock();
     printf("This took %fs\n", ((double) (end_t - start_t)) / CLOCKS_PER_SEC);

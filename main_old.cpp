@@ -4,6 +4,7 @@
 #include <vector>
 #include <bitset>
 #include <ctime>
+#include <sstream>
 
 clock_t start_t, end_t;
 
@@ -97,6 +98,8 @@ pair<int, int> cross_correlation(vector<int> &sequence, vector<int> &chip_sequen
         }
     }
 
+//threshold als hart codierte konstante
+//macht es einen unterschied int oder const int
     if(pos_peak > threshold || neg_peak < -threshold) {
         if(pos_peak > -neg_peak) {
             return make_pair(1, delta_delta);
@@ -126,22 +129,22 @@ void read_sequence(vector<int>& sequence, const string& filePath) {
 }
 
 void test() {
+    start_t = clock();
     for(int i = 0; i <24; i++) {
-        generateSequence(i+1);
-        start_t = clock();
         pair<int, int> result = cross_correlation(sat_sequence, chip_sequences[i]);
-        end_t = clock();
-        if(!(result.first == -1 && result.second == -1)) {
-            printf("Satellite %d has sent bit %d (delta %d)\n", i, result.first, result.second);
-            printf("This took %fms\n", ((double) (end_t - start_t)) / CLOCKS_PER_SEC * 1 * (10 * 10 * 10));
-        }
     }
+    end_t = clock();
+    printf("This took %fs\n", ((double) (end_t - start_t)) / CLOCKS_PER_SEC);
 }
 
 int main(int argc, char* argv[]) {
     string path = "gps_sequence_7.txt";
     if (argc == 2) {
         path = argv[1];
+    }
+
+    for (int i = 0; i < 24; ++i) {
+        generateSequence(i+1);
     }
 
     read_sequence(sat_sequence, path);
