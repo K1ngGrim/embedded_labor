@@ -111,42 +111,6 @@ void cross_correlation_optimal(const int sequence[], const int chip_sequence[], 
     }
 }
 
-void cross_correlation(const int sequence[], const int chip_sequence[], int result[]) {
-    int neg_peak = 0;
-    int pos_peak = 0;
-    int delta_delta = 0;
-
-    for(int delta = 0; delta < 1023; delta++) {
-
-        int sum = dot_product_optimal(sequence, chip_sequence, delta);
-        //cout << sum << " ";
-
-        if(sum > pos_peak) {
-            pos_peak = sum;
-            delta_delta = delta;
-
-        }else
-        if(sum < neg_peak) {
-            neg_peak = sum;
-            delta_delta = delta;
-        }
-    }
-
-    //threshold als hart codierte konstante
-    //macht es einen unterschied int oder const int
-    if(pos_peak > 800 || neg_peak < -800) {
-        if(pos_peak > -neg_peak) {
-            result[0] = 1;
-            result[1] = delta_delta;
-            return;
-        }else if(pos_peak < -neg_peak) {
-            result[0] = 0;
-            result[1] = delta_delta;
-            return;
-        }
-    }
-}
-
 void test_optimal() {
     start_t = clock();
     for(auto & chip_sequence : chip_sequences) {
